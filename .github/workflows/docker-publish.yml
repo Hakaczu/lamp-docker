@@ -6,12 +6,11 @@ name: Docker
 # documentation.
 
 on:
-  schedule:
-    - cron: '22 23 * * *'
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 env:
   # Use docker.io for Docker Hub if empty
