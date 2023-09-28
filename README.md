@@ -2,4 +2,8 @@
 Docker PHP container has installed missing modules like PDO, etc.
 
 ## Usage
-`docker-compose up`
+```bash
+git clone https://github.com/Hakaczu/lamp-docker.git
+cd lamp-docker
+docker-compose up
+```
