@@ -1,29 +1,76 @@
-version: "3.9"
-services: 
-    php:
-        build: .
-        restart: always
-        volumes: 
-            - ./:/var/www/html
-        ports: 
-            - 8080:80
-        links: 
+services:
+    nginx:
+        image: nginx:stable
+        depends_on:
+            - php82
+            - php81
             - mariadb
-    
-    mariadb:
-        image: "mariadb:latest"
+        ports:
+            - ${PHP_PORT:-8080}:80
+        volumes:
+            - ./htdocs:/var/www/html:ro
+            - ./nginx/conf.d:/etc/nginx/conf.d:ro
+
+    php82:
+        image: php:8.2-fpm
         restart: always
-        ports: 
-            - 3306:3306
-        environment: 
-            MYSQL_ROOT_PASSWORD: "root"
-    
-    myadmin:
-        depends_on: 
+        depends_on:
             - mariadb
-        image: "phpmyadmin:latest"
-        restart: always
-        ports: 
-            - 8000:80
+        env_file:
+            - .env
         environment:
-            - PMA_HOST=mariadb
+            DB_HOST: mariadb
+            DB_PORT: 3306
+            DB_USER: ${MYSQL_USER}
+            DB_PASSWORD: ${MYSQL_PASSWORD}
+            DB_NAME: ${MYSQL_DATABASE}
+        command: ["bash", "-lc", "docker-php-ext-install mysqli pdo pdo_mysql && php-fpm"]
+        volumes:
+            - ./htdocs:/var/www/html
+
+    php81:
+        image: php:8.1-fpm
+        restart: always
+        depends_on:
+            - mariadb
+        env_file:
+            - .env
+        environment:
+            DB_HOST: mariadb
+            DB_PORT: 3306
+            DB_USER: ${MYSQL_USER}
+            DB_PASSWORD: ${MYSQL_PASSWORD}
+            DB_NAME: ${MYSQL_DATABASE}
+        command: ["bash", "-lc", "docker-php-ext-install mysqli pdo pdo_mysql && php-fpm"]
+        volumes:
+            - ./htdocs:/var/www/html
+
+    mariadb:
+        image: mariadb:latest
+        restart: always
+        env_file:
+            - .env
+        ports:
+            - 3306:3306
+        environment:
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        healthcheck:
+            test: ["CMD", "bash", "-c", "mysqladmin ping -h localhost -uroot -p$MYSQL_ROOT_PASSWORD"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    myadmin:
+        depends_on:
+            - mariadb
+        image: phpmyadmin:latest
+        restart: always
+        env_file:
+            - .env
+        ports:
+            - ${PHPMYADMIN_PORT:-8000}:80
+        environment:
+            PMA_HOST: mariadb
